@@ -1,0 +1,46 @@
+pragma solidity ^0.4.0;
+
+contract Escrow {
+   
+   address buyer ;
+   address seller;
+   address client;
+
+   enum state {Awaiting_Payment, Awaiting_Delivery, Completed, Refund}  
+   state public CurrentState;
+   
+   modifier buyerOnly () {
+       require(msg.sender == buyer);
+       _;
+   }
+   
+   modifier sellerOnly() {
+       require(msg.sender == seller || msg.sender == client);
+       _;
+   }
+
+constructor (address _buyer,address _seller, address _client) {
+   buyer  = _buyer;
+   seller = _seller;
+   client = _client;
+  }
+  
+  function confirmPayment() buyerOnly()payable {
+      require(CurrentState == state.Awaiting_Payment);
+      CurrentState = state.Awaiting_Delivery;
+  }
+  
+  function confirmDelivery() sellerOnly() {
+      require(CurrentState == state.Awaiting_Delivery);
+      seller.send(this.balance);
+      CurrentState = state.Completed;
+  }
+  
+  function refundBuyer() sellerOnly()  {
+      require(CurrentState == state.Awaiting_Delivery);
+      buyer.send(this.balance);
+      CurrentState = state.Refund;
+  }
+  
+  
+}
